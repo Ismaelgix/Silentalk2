@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Voz Avanzado</title>
+  <style>
+    /* Estilos globales */
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(45deg, #6a11cb 0%, #72a3f7 100%);
+      color: #fff;
+    }
+
+    .container {
+      background-color: #fff;
+      border-radius: 15px;
+      padding: 30px 40px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.15);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 32px;
+      color: #333;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    /* Estilo para el área de texto */
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 15px;
+      font-size: 18px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      resize: none;
+      margin-bottom: 20px;
+      background-color: #f7f7f7;
+      color: #333;
+      box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+
+    textarea:focus {
+      border-color: #8eb8ff;
+      outline: none;
+    }
+
+    /* Estilo para los controles de selección */
+    select, input[type="range"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 15px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background-color: #f7f7f7;
+      box-sizing: border-box;
+    }
+
+    select:focus, input[type="range"]:focus {
+      border-color: #8eb7ff;
+      outline: none;
+    }
+
+    /* Botones */
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-top: 20px;
+      font-size: 18px;
+      background-color: #8eb7ff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #6a11cb;
+    }
+
+    /* Estilos para el pie de la página */
+    .audio-controls {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .audio-controls button {
+      width: 48%;
+    }
+
+    .status {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    /* Estilos de las etiquetas */
+    label {
+      font-size: 16px;
+      color: #333;
+      margin-top: 10px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>SilenTalk</h1>
+    
+    <!-- Área para el texto -->
+    <textarea id="textInput" placeholder="Escribe el texto que quieres que se lea..."></textarea>
+    
+    <!-- Selector de voz -->
+    <label for="voiceSelect">Selecciona una voz:</label>
+    <select id="voiceSelect"></select>
+    
+    <!-- Controles de velocidad -->
+    <label for="rateRange">Velocidad:</label>
+    <input type="range" id="rateRange" min="0.1" max="2" step="0.1" value="1">
+    
+    <!-- Controles de volumen -->
+    <label for="volumeRange">Volumen:</label>
+    <input type="range" id="volumeRange" min="0" max="1" step="0.1" value="1">
+    
+    <!-- Botón para generar la voz -->
+    <button onclick="speakText()">Generar Voz</button>
+    
+    <!-- Estado de la reproducción -->
+    <div class="status" id="status"></div>
+    
+    <!-- Controles de audio -->
+    <div class="audio-controls">
+      <button onclick="saveAudio()">Guardar Audio</button>
+      <button onclick="clearText()">Limpiar</button>
+    </div>
+  </div>
+
+  <script>
+    let voices = [];
+    let currentUtterance = null;
+
+    // Función para cargar las voces disponibles
+    function loadVoices() {
+      voices = speechSynthesis.getVoices();
+      const voiceSelect = document.getElementById("voiceSelect");
+      voiceSelect.innerHTML = '';
+
+      voices.forEach((voice, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = voice.name;
+        voiceSelect.appendChild(option);
+      });
+      
+      // Seleccionar voz por defecto
+      if (voices.length > 0) {
+        voiceSelect.selectedIndex = 0;
+      }
+    }
+
+    // Cambiar la voz seleccionada
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    // Función para leer el texto
+    function speakText() {
+      const text = document.getElementById("textInput").value.trim();
+      const voiceIndex = document.getElementById("voiceSelect").value;
+      const rate = document.getElementById("rateRange").value;
+      const volume = document.getElementById("volumeRange").value;
+      
+      if (!text) {
+        alert("Por favor, escribe algo.");
+        return;
+      }
+
+      // Crear objeto SpeechSynthesisUtterance
+      currentUtterance = new SpeechSynthesisUtterance(text);
+      currentUtterance.voice = voices[voiceIndex];
+      currentUtterance.lang = voices[voiceIndex].lang;
+      currentUtterance.rate = rate;
+      currentUtterance.volume = volume;
+
+      // Mostrar estado de carga
+      document.getElementById("status").textContent = "Reproduciendo...";
+
+      // Reproducir el texto
+      speechSynthesis.speak(currentUtterance);
+
+      // Después de que se complete la reproducción
+      currentUtterance.onend = function() {
+        document.getElementById("status").textContent = "Texto leído.";
+      };
+    }
+
+    // Función para guardar el audio
+    function saveAudio() {
+      const text = document.getElementById("textInput").value.trim();
+      if (!text) {
+        alert("Por favor, escribe algo antes de guardar.");
+        return;
+      }
+
+      const rate = document.getElementById("rateRange").value;
+      const volume = document.getElementById("volumeRange").value;
+
+      // Usar un Blob para guardar el audio generado
+      const utterance = new SpeechSynthesisUtterance(text);
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const gainNode = audioContext.createGain();
+      const voiceIndex = document.getElementById("voiceSelect").value;
+      utterance.voice = voices[voiceIndex];
+      utterance.rate = rate;
+      utterance.volume = volume;
+
+      // Convertir el SpeechSynthesisUtterance en un archivo de audio
+      const audioData = new Blob([utterance], { type: "audio/wav" });
+      const audioURL = URL.createObjectURL(audioData);
+      
+      const link = document.createElement("a");
+      link.href = audioURL;
+      link.download = "audio_generado.wav";
+      link.click();
+    }
+
+    // Función para limpiar el área de texto
+    function clearText() {
+      document.getElementById("textInput").value = '';
+    }
+    
+    // Cargar voces al inicio
+    loadVoices();
+  </script>
+
+</body>
+</html>
